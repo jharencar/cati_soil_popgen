@@ -1,0 +1,25 @@
+---
+title: "Sampling Map"
+author: "Julia Harenčár"
+date: "6/26/2024"
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code-overflow: wrap
+    toc: true
+    number-sections: true
+theme:
+  light: minty
+  dark: superhero
+editor_options: 
+  chunk_output_type: console
+---
+
+## Data
+
+We collected soil samples from six different patches of *Calochotrus tiburonensis* on Ring Mountain. The number of soil samples collected from each patch depended on the patch size, ranging from 1-6 samples per patch. We sampled the nearest plant to each soil core for genetic analysis. ((In two cases, two side-by-side plants were collected)).
+
+```{r}
+
+```
