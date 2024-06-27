@@ -5,9 +5,6 @@
 # Calochortus tiburonensis sequqncing run and patterns of soil chemistry and
 # composition using individual mantel tests for each soil compound/measurement
 
-
-# Read file
-
 # Load dependencies
 ## install.packages("vegan")
 ## install.packages("adegenet")
