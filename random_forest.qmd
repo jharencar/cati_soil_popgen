@@ -1,0 +1,32 @@
+---
+title: "Random Forest"
+author: "Julia Harenčár"
+date: "6/27/2024"
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code-overflow: wrap
+    toc: true
+    number-sections: true
+theme:
+  light: minty
+  dark: superhero
+editor_options: 
+  chunk_output_type: console
+---
+
+## Random Forest analysis
+
+Load packages:
+
+```{r}
+library(randomForest)
+```
+
+Read in data:
+
+```{r}
+
+
+```
