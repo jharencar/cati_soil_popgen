@@ -16,10 +16,82 @@ editor_options:
   chunk_output_type: console
 ---
 
+```{r}
+## load packages
+library(dplyr)
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+library("rnaturalearth")
+library(rnaturalearthhire)
+library(elevatr)
+library(raster)
+```
+
 ## Data
 
 We collected soil samples from six different patches of *Calochotrus tiburonensis* on Ring Mountain. The number of soil samples collected from each patch depended on the patch size, ranging from 1-6 samples per patch. We sampled the nearest plant to each soil core for genetic analysis. ((In two cases, two side-by-side plants were collected)).
 
 ```{r}
-
+samps <- read.csv("lat_long_r.csv", header = T)
+# round to 6 decimal places
+samps <- samps %>% mutate(across(c('Lat_dd', 'Long_dd'), round, 6))
 ```
+
+
+## Map
+Help for making elevation maps from here: https://rspatialdata.github.io/elevation.html
+```{r}
+
+# Define bounding box 
+lat_min <- 37.909
+lat_max <- 37.917
+lon_min <- -122.50
+lon_max <- -122.484
+
+# Create a bounding box as a matrix
+bbox <- matrix(c(lon_min, lat_min,
+                 lon_max, lat_min,
+                 lon_max, lat_max,
+                 lon_min, lat_max,
+                 lon_min, lat_min), 
+               ncol = 2, byrow = TRUE)
+
+# Convert the bounding box to an sf object
+sf_bbox <- st_polygon(list(bbox)) %>% 
+  st_sfc(crs = 4326) %>% 
+  st_sf()
+
+# load CA elevation data (simplify later to just pull for ring mountain)
+elevation_1 <- elevatr::get_elev_raster(locations = sf_bbox, z = 14, clip = "locations")
+
+# convert to df
+elevate <- as.data.frame(elevation_1, xy = TRUE)
+
+colnames(elevate)[3] <- "elevation_value"
+elevate <- elevate[complete.cases(elevate), ]
+
+a <- ggplot() +
+  geom_raster(data = elevate, aes(x = x, y = y, fill = elevation_value)) +
+  geom_sf(data = sf_bbox, color = "white", fill = NA) +
+  # coord_sf(xlim = c(-125.00, -120.3), ylim = c(37.00, 41))+
+  scale_fill_gradient(low = "gray90", high = "gray45", aesthetics = "fill") +
+  labs(title = "", x = "", y = "", fill = "Elevation (meters)") +
+  geom_point(data = samps, aes(x = Long_dd, y = Lat_dd), color="black") +
+  geom_text()
+
+  
+  # geom_point(data = hatcheries, aes(x = long, y = lat, color=Hatchery), size=3)+
+  # scale_color_manual(values = c("#9379AD", "#e4af62", "#b65d2b", "#79ad9f"))+
+  # annotate(geom = "text", x = -124.3, y = 38.5, label = "Pacific Ocean", fontface = "italic", color = "grey25", size = 3) +
+  # annotation_scale(location = "bl", width_hint = 0.35) + 
+  # annotation_north_arrow(location = "bl", which_north = "true", pad_x = unit(0.25, "in"), pad_y = unit(0.25, "in"), 
+  #                        style = north_arrow_fancy_orienteering) +
+  # theme(panel.grid.major = element_line(color = gray(.9), linetype = "dashed"), 
+  #       panel.background = element_rect(fill = "aliceblue"), axis.text.x = element_text(angle = 45, hjust = 1, size = 5),
+  #       axis.text.y = element_text(size=5))+
+  # guides(shape = guide_legend(override.aes = list(size = 1)), color = guide_legend(override.aes = list(size = 1)))+
+  # theme(legend.title = element_text(size = 3), legend.text = element_text(size = 3), legend.key.size = unit(0.5, 'cm'))
+```
+
+
