@@ -79,10 +79,10 @@ a <- ggplot() +
   # coord_sf(xlim = c(-125.00, -120.3), ylim = c(37.00, 41))+
   scale_fill_gradient(low = "gray90", high = "gray45", aesthetics = "fill") +
   labs(title = "", x = "", y = "", fill = "Elevation (meters)") +
-  geom_point(data = samps, aes(x = Long_dd, y = Lat_dd), color="black") +
-  geom_text(data=patches)
+  geom_point(data = samps, aes(x = Long_dd, y = Lat_dd), color=) +
+  geom_text(data=patches, aes(long,lat, label = Patch))
 
-  geom_text(data = hatcheries, aes(long, lat, group = Hatchery, label=Hatchery), size = 4, fontface = "bold", nudge_x = c(-0.45,0.5,0.4,0.3), nudge_y = c(0, -0.1, -0.1, 0))
+  
   # geom_point(data = hatcheries, aes(x = long, y = lat, color=Hatchery), size=3)+
   # scale_color_manual(values = c("#9379AD", "#e4af62", "#b65d2b", "#79ad9f"))+
   # annotate(geom = "text", x = -124.3, y = 38.5, label = "Pacific Ocean", fontface = "italic", color = "grey25", size = 3) +
