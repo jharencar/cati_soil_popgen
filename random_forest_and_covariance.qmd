@@ -174,7 +174,7 @@ comb <- merge(snp_data, soil, by = "plantID")
 
 ```
 
-#### Genetic and soil distances covariance 
+#### Genetic and soil distances covariance
 
 ```{r}
 library(psych)
