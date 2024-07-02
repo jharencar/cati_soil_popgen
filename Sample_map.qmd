@@ -23,7 +23,7 @@ library("ggplot2")
 theme_set(theme_bw())
 library("sf")
 library("rnaturalearth")
-library(rnaturalearthhire)
+#library(rnaturalearthhire)
 library(elevatr)
 library(raster)
 ```
@@ -36,6 +36,8 @@ We collected soil samples from six different patches of *Calochotrus tiburonensi
 samps <- read.csv("lat_long_r.csv", header = T)
 # round to 6 decimal places
 samps <- samps %>% mutate(across(c('Lat_dd', 'Long_dd'), round, 6))
+patches <- data.frame(Patch = c("Westward Ridge", "Calamagrostis", "Taylor", "Fern Gulch", "San Quentin", "Petroglyph Rock"), lat = c(37.91461, 37.91573, 37.91200, 37.91083, 37.91308, 37.91100), long = c(-122.4958, -122.4978, -122.4879, -122.4857, -122.4900, -122.4941))
+
 ```
 
 
@@ -78,9 +80,9 @@ a <- ggplot() +
   scale_fill_gradient(low = "gray90", high = "gray45", aesthetics = "fill") +
   labs(title = "", x = "", y = "", fill = "Elevation (meters)") +
   geom_point(data = samps, aes(x = Long_dd, y = Lat_dd), color="black") +
-  geom_text()
+  geom_text(data=patches)
 
-  
+  geom_text(data = hatcheries, aes(long, lat, group = Hatchery, label=Hatchery), size = 4, fontface = "bold", nudge_x = c(-0.45,0.5,0.4,0.3), nudge_y = c(0, -0.1, -0.1, 0))
   # geom_point(data = hatcheries, aes(x = long, y = lat, color=Hatchery), size=3)+
   # scale_color_manual(values = c("#9379AD", "#e4af62", "#b65d2b", "#79ad9f"))+
   # annotate(geom = "text", x = -124.3, y = 38.5, label = "Pacific Ocean", fontface = "italic", color = "grey25", size = 3) +
