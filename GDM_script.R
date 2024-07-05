@@ -6,8 +6,6 @@
 # composition using generalized dissimilarity models
 
 
-# Read file
-
 # Load dependencies
 ## install.packages("vegan")
 ## install.packages("adegenet")
@@ -42,6 +40,11 @@ lat_long <- as.data.frame(lat_long)
 # Combine lat long and soil data
 descriptors <- cbind(lat_long, soils)
 
+# Remove last column from soil table, because it is Mg/Ca ratio and redundant
+# with columns for Mg and Ca
+
+descriptors <- descriptors[,-ncol(descriptors)]
+
 # Trim to only lat/long and soil variables. This will be the environmental data 
 # for the GDM
 descriptors_mod <- descriptors[c(2,3,4, 10:ncol(descriptors))]
@@ -49,7 +52,7 @@ descriptors_mod <- descriptors[c(2,3,4, 10:ncol(descriptors))]
 # Remove plant 9, which does not have a corresponding soil sample
 descriptors_mod <- descriptors_mod[-9,]
 
-# Get euclidian estimates of genetic distance
+# Get euclidean estimates of genetic distance
 cati_alleles <- CATIgind$tab
 
 # Remove plant 9 from the data frame of alleles also
@@ -60,7 +63,7 @@ cati_alleles_mod <- cati_alleles[-9,]
 # calculate euclidian genetic distance. This approach is used to create the
 # square difference matrix and is capable of removing NAs from the calculation
 # of distance
-eucl_dist <- as.matrix( vegdist(cati_alleles_mod, method="euclidean", diag = TRUE, upper = TRUE, na.rm = TRUE))
+eucl_dist <- as.matrix( vegdist(cati_alleles_mod, method="euclidean", diag = FALSE, upper = FALSE, na.rm = TRUE))
 
 
 
@@ -69,7 +72,7 @@ eucl_dist <- as.matrix(eucl_dist/max(eucl_dist))
 
 
 # Attach the plant IDs to the data frame of genetic distance
-eucl_dist <- cbind(descriptors_mod_2$plantID, as.data.frame(eucl_dist))
+eucl_dist <- cbind(descriptors_mod$plantID, as.data.frame(eucl_dist))
 colnames(eucl_dist)[1] <- c("plantID")
 
 
@@ -89,9 +92,30 @@ gdm.1 <- gdm(data=gdmTab.dis, geo=TRUE)
 
 gdm.1.splineDat <- isplineExtract(gdm.1)
 
-plot(gdm.1.splineDat$x[,"Barium"], 
-     gdm.1.splineDat$y[,"Barium"], 
+plot(gdm.1.splineDat$x[,"Sodium"], 
+     gdm.1.splineDat$y[,"Sodium"], 
      lwd=3,
      type="l", 
-     xlab="Barium Content", 
-     ylab="Partial genetic distance")
+     xlab="Sodium Abundance", 
+     ylab="Partial genetic turnover")
+
+## Plot relative contributions of all variables
+# extract isocline y max values
+
+isocline_y <- gdm.1.splineDat$y
+cont_vector <- isocline_y[nrow(isocline_y),]
+cont_matrix <- as.data.frame(cont_vector)
+max_isoclines <- data.frame(colnames(cont_vector), cont_matrix$cont_vector)
+colnames(max_isoclines) <- c("variable", "contribution")
+max_isoclines <- max_isoclines[order(-max_isoclines$contribution),]
+max_isoclines$contribution <- max_isoclines$contribution + 0.0000001
+
+
+ggplot( data = max_isoclines,aes( x = factor(variable, 
+            level = c(max_isoclines[order(max_isoclines$contribution),1])),
+            y = contribution)) +
+  geom_bar(stat = "identity", aes(fill = contribution))+
+  coord_flip()+
+  theme_gray()+
+  theme(legend.position="none")+
+  labs(x="Soil Element", y = "Relative Contribution")

@@ -30,17 +30,26 @@ soils <- soils[order(soils$plantID), ]
 # trim empty rows
 soils <- soils[1:24,]
 
+
+# Create list of plant numbers to remove (remove plant 9 which is not well 
+# matched to any soil sample)
+soils_mod <- soils[-9, ]
+
+# remove plant 9 from table of genetic data
+cati_alleles <- CATIgind$tab
+alleles_mod <- cati_alleles[-9,]
+
 # Produce matrix of genetic distances for CaTi
-# We use euclidian distances because many alleles are NA for many individuals
+# We use euclidean distances because many alleles are NA for many individuals
 # most estimates of genetic distance are also designed to compare populations and
 # not individuals
-eucl_dist <- dist(CATIgind$tab)
+eucl_dist <- vegdist(alleles_mod , method="euclidean", diag = FALSE, upper = FALSE, na.rm = TRUE)
 
 
-# Produce matrix of differnces in the abundance of soil components (Ba, Co, Mg, 
+# Produce matrix of differences in the abundance of soil components (Ba, Co, Mg, 
 # etc. ), then perform mantel test for correlations with each and the matrix of 
 # genetic distance. Output the r and p values for each comparison. This will be 
-# done with a for loop that itterates through each chemical compound.
+# done with a for loop that iterates through each chemical compound.
 
 
 # Initialize empty vectors to store information from the loop
@@ -49,15 +58,15 @@ r_value <- c()
 p_value <- c()
 
 # The first three columns are not soil chemical data, so we start the loop with
-# columm four
+# column four
 
-for (i in 4:ncol(soils)){
+for (i in 4:ncol(soils_mod)){
   
   # isolate one soil component
-  this_compound <- soils[,i]
+  this_compound <- soils_mod[,i]
   
   # Produce distance matrix for the soil component
-  chem_matrix <- dist(this_compound)
+  chem_matrix <- vegdist(this_compound , method="euclidean", diag = FALSE, upper = FALSE, na.rm = TRUE)
   
   # Perform mantel test
   mantel_out <- mantel(chem_matrix, eucl_dist,method = "pearson",
