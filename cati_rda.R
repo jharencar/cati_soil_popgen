@@ -62,6 +62,14 @@ cati_alleles <- CATIgind$tab
 cati_alleles_mod <- cati_alleles[-9,]
 
 
+
+
+#### Create DF only with loci called in all individuals ###
+#cati_no_na <- cati_alleles_mod[ , colSums(is.na(cati_alleles_mod))==0]
+
+
+
+
 # RDA cannot be performed with NAs in the response variable. We thus need to 
 # replace the NAs in our dataset somehow. Here we impute the most common allele 
 # as a replacement for NAs. OTHER METHODS COULD BE MORE APPROPIRATE and it is 
@@ -87,26 +95,6 @@ rownames(cati_allels_imp) <- names2
 
 
 ### Perform RDA ###
-
-cati_rda <- rda(cati_allels_imp ~ Magnesium + Nickel + Calcium,
-    data = descriptors_mod,
-    scale = FALSE,
-    na.action = "na.exclude",
-    subset = NULL,
-)
-
-# Calculate adjusted r squared for the RDA
-RsquareAdj(cati_rda)
-
-# Use an anova to test for significant effects of predictors in RDA
-anova.cca(cati_rda)
-
-# The model here is not significant when Magnesium, Nickel, and Calcium 
-# are tested as potential predictor variables
-
-
-# Check dbRDA
-
 cati_dbrda <- dbrda(cati_allels_imp ~ Magnesium + Nickel + Calcium,
                 data = descriptors_mod,
                 distance = "euclidean",
@@ -129,6 +117,9 @@ dbrda_summary$cont
 # dbRDA axis 1 explains 5.44% of the total variation, similar to the first
 # unconstrained axis1 which explains 6.15% 
 
+# Calculate adjusted r squared for the RDA
+RsquareAdj(cati_dbrda)
+
 dbrda_summary$biplot
 # the first dbRDA axis is most strongly correlated with Mg (-0.9874), 
 # Ni = 0.3497, Ca = 0.3334
@@ -137,8 +128,7 @@ dbrda_summary$biplot
 
 #Plot RDA 
 #set up colors for 6 populations with viridis package
-levels(descriptors_mod$population) <- c("FernGulch","SanQuentin","PetroglyphRock",
-                                        "Calamagrostis","Taylor", "WestwardRidge")
+levels(descriptors_mod$population) <- c("FernGulch", "SanQuentin","PetroglyphRock", "Calamagrostis","Taylor", "WestwardRidge")
 pops <- descriptors_mod$population
 v_cols <- viridis(6)
   
@@ -152,17 +142,15 @@ legend("bottomleft", legend=levels(pops), bty="n", col="gray32", pch=21, cex=1, 
 
 
 
-
-
-
-
-
+#######################################################################
 #### RDA with PCA of soil chemistry ####
+######################################################################
+
 # It is possible that we can account for total soil differences in the RDA 
-# framework by using the princple component loadings of soil variation
+# framework by using the princpal component loadings of soil variation
 
 # To perform a PCA of soil variation, we must use the entire soils dataset. 
-# Plants loadings can still be extracted from this more complete representation
+# Plant loadings can still be extracted from this more complete representation
 # of soil variation.
 
 # Load full soils data
@@ -256,9 +244,6 @@ legend("bottomright", legend=levels(pops), bty="n", col="gray32", pch=21, cex=1,
 
 
 
-
-
-
 ########## PCA of genetic diversity ###########
 # The PCA is here because it requires the interpolated data from 
 
@@ -289,7 +274,7 @@ v_cols <- cbind(viridis(6), c("FernGulch","SanQuentin","PetroglyphRock",
                             "Calamagrostis","Taylor", "WestwardRidge"))
 colnames(v_cols) <- c("color", "population")
 
-# Attatch colors to genetic dataframe
+# Attach colors to genetic dataframe
 cati_gen_colors <- merge(cati_gen_pops, v_cols, by.x = c("population"))
 
 

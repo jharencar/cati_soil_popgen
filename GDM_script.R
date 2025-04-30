@@ -18,6 +18,7 @@ library(poppr)
 library(distances)
 library(readr)
 library(gdm)
+library(ggplot2)
 
 # Plants are listed in genid object in numerical order based on their ID
 load("C:/Users/PlantagoMacine/Documents/GitHub/cati_soil_popgen/CATIgind.Rdata")
@@ -47,7 +48,7 @@ descriptors <- descriptors[,-ncol(descriptors)]
 
 # Trim to only lat/long and soil variables. This will be the environmental data 
 # for the GDM
-descriptors_mod <- descriptors[c(2,3,4, 10:ncol(descriptors))]
+descriptors_mod <- descriptors[c(3,4,5, 10:ncol(descriptors))]
 
 # Remove plant 9, which does not have a corresponding soil sample
 descriptors_mod <- descriptors_mod[-9,]
@@ -77,7 +78,7 @@ colnames(eucl_dist)[1] <- c("plantID")
 
 
 
-
+set.seed(200)
 #Peform GDM
 gdmTab.dis <- formatsitepair(bioData=eucl_dist, 
                              bioFormat=3, #diss matrix 
@@ -92,11 +93,11 @@ gdm.1 <- gdm(data=gdmTab.dis, geo=TRUE)
 
 gdm.1.splineDat <- isplineExtract(gdm.1)
 
-plot(gdm.1.splineDat$x[,"Sodium"], 
-     gdm.1.splineDat$y[,"Sodium"], 
+plot(gdm.1.splineDat$x[,"NO3_NO2"], 
+     gdm.1.splineDat$y[,"NO3_NO2"], 
      lwd=3,
      type="l", 
-     xlab="Sodium Abundance", 
+     xlab="Nitrate Abundance (mg/Kg)", 
      ylab="Partial genetic turnover")
 
 ## Plot relative contributions of all variables
@@ -105,10 +106,10 @@ plot(gdm.1.splineDat$x[,"Sodium"],
 isocline_y <- gdm.1.splineDat$y
 cont_vector <- isocline_y[nrow(isocline_y),]
 cont_matrix <- as.data.frame(cont_vector)
-max_isoclines <- data.frame(colnames(cont_vector), cont_matrix$cont_vector)
+max_isoclines <- data.frame(rownames(cont_matrix), cont_matrix$cont_vector)
 colnames(max_isoclines) <- c("variable", "contribution")
 max_isoclines <- max_isoclines[order(-max_isoclines$contribution),]
-max_isoclines$contribution <- max_isoclines$contribution + 0.0000001
+max_isoclines$contribution <- max_isoclines$contribution + 0.0001
 
 
 ggplot( data = max_isoclines,aes( x = factor(variable, 
@@ -119,3 +120,84 @@ ggplot( data = max_isoclines,aes( x = factor(variable,
   theme_gray()+
   theme(legend.position="none")+
   labs(x="Soil Element", y = "Relative Contribution")
+
+
+# Test for significance 
+modTest <- gdm.varImp(gdmTab.dis, geo=T, nPerm=500, parallel=T, cores=10, predSelect=F)
+# No individual soil component was significant, but the entire model was
+# Model assessment`
+#All predictors
+#Model deviance                     17.605
+#Percent deviance explained         41.869
+#Model p-value                       0.002
+#Fitted permutations               500.000
+
+
+
+######## Loop for multiple runs of GDM
+
+
+for (i in c(1:500)){
+  
+  #Peform GDM
+  gdmTab.dis <- formatsitepair(bioData=eucl_dist, 
+                               bioFormat=3, #diss matrix 
+                               XColumn="Long_dd", 
+                               YColumn="Lat_dd", 
+                               predData=descriptors_mod, 
+                               siteColumn="plantID")
+  
+  gdm.1 <- gdm(data=gdmTab.dis, geo=TRUE)
+  
+  
+  
+  gdm.1.splineDat <- isplineExtract(gdm.1)
+  
+  plot(gdm.1.splineDat$x[,"Sodium"], 
+       gdm.1.splineDat$y[,"Sodium"], 
+       lwd=3,
+       type="l", 
+       xlab="Sodium Abundance", 
+       ylab="Partial genetic turnover")
+  
+  ## Plot relative contributions of all variables
+  # extract isocline y max values
+
+if( i == 1){  
+    
+  isocline_y <- gdm.1.splineDat$y
+  cont_vector <- isocline_y[nrow(isocline_y),]
+  cont_matrix <- as.data.frame(cont_vector)
+  max_isoclines <- data.frame(rownames(cont_matrix), cont_matrix$cont_vector)
+  colnames(max_isoclines) <- c("variable", "contribution")
+
+}
+  else {
+    isocline_y <- gdm.1.splineDat$y
+    cont_vector <- isocline_y[nrow(isocline_y),]
+    cont_matrix <- as.data.frame(cont_vector)
+    max_isoclines_2 <- data.frame(rownames(cont_matrix), cont_matrix$cont_vector)
+    
+    max_isoclines[ , ncol(max_isoclines) +1] <- max_isoclines_2[,2]
+    colnames(max_isoclines)[ncol(max_isoclines)] <- paste0("new", i)
+    
+    print(i)
+  }
+  
+}
+
+# Check cumulative values for each element
+test <- rowSums(max_isoclines[,-1])
+out <- cbind.data.frame(max_isoclines$variable ,test )
+
+## Many elements were not significant
+## Remove them from the data set and re-run
+
+descriptors_mod <- descriptors_mod[, -which(names(descriptors_mod) %in% 
+                          c("aluminum", "Arsenic", "Boron", "Calcium",
+                            "Cadmium", "Chromium", "Potassium", "Manganese",
+                            "Lead", "Sulfur", "Selenium", "Silicon", "NH4-N",
+                             "Strontium"))]
+
+
+
