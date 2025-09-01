@@ -22,9 +22,10 @@ Load packages:
 
 ```{r}
 library(randomForest)
-library(dplyr)
+library(tidyverse)
 library(stringr)
 library(vegan)
+
 ```
 
 ### Read in data and get pairwise distances:
@@ -58,7 +59,7 @@ for (i in 7:ncol(soils)){
   this_compound <- soils[,i]
   
   # Produce distance matrix for the soil component
-  dist_matrix <- as.matrix(vegdist(this_compound))
+  dist_matrix <- as.matrix(vegdist(this_compound,method="euclidean",na.rm = TRUE))
   
   # Convert to data frame and reshape to long format
   dist_df <- as.data.frame(as.table(dist_matrix))
@@ -171,36 +172,100 @@ comb <- merge(snp_data, soil, by = "plantID")
 #### Raw soil covariance
 
 ```{r}
+# Correlation heatmap in ggplot world:
+library(ggcorrplot)
 
-```
+# subset raw soils data to remove genetic data:
+soils_only <- soils[,5:31]
 
-#### Genetic and soil distances covariance
+soils_cor_ggplot <- cor(soils_only)
+#cor_ggplot <- cor(subset_chems_corr_above0.5)
 
-```{r}
+# all variables
+ggcorrplot(soils_cor_ggplot,
+           lab = TRUE,              # show correlation values
+           lab_size = 4,            # size of the correlation labels
+           tl.cex = 11,              # axis tick label size
+           tl.srt = 90)             # rotate x-axis labels
+
+# Correlation plot matrix with psych package
 library(psych)
+pairs.panels(soils_only, 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE, # show correlation ellipses
+             gap = 0,
+             cex = 2.5    # increase correlation value label size
+             )
 
-# initial heat map of all components to ID significant correlations
-cor_plot <- corCi(full_comb_no.id, plot=F)
-dev.off()
-corPlot(cor_plot)
+# Correlation plot after narrowing to those with strong correlations with our main chems of inerest:
+colnames(soils_only)[colnames(soils_only) == 'aluminum'] <- 'Aluminum'
+subset_raw_soil <- soils_only %>% dplyr::select(Calcium,Magnesium,Nickel,Copper,Silicon,Potassium,Strontium,Boron,Aluminum,Arsenic)
 
-pairs.panels(full_comb_no.id, 
+# Correlation plot matrix with psych package
+library(psych)
+pairs.panels(subset_raw_soil, 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = TRUE,  # show density plots
              ellipses = TRUE, # show correlation ellipses
              gap = 0
              )
+```
+
+\
+
+#### Genetic and soil distances covariance
+
+```{r}
+# Correlation heatmap in ggplot world:
+library(ggcorrplot)
+cor_ggplot <- cor(full_comb_no.id)
+#cor_ggplot <- cor(subset_chems_corr_above0.5)
+
+# all variables
+ggcorrplot(cor_ggplot,
+           lab = TRUE,              # show correlation values
+           lab_size = 4,            # size of the correlation labels
+           tl.cex = 11,              # axis tick label size
+           tl.srt = 90)             # rotate x-axis labels
+# selected variables
+
+
+# Correlation plot matrix with psych package
+library(psych)
+pairs.panels(full_comb_no.id, 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE, # show correlation ellipses
+             gap = 0,
+             cex = 2.5    # increase correlation value label size
+             )
 
 # Narrow down to those with stronger correlations
-subset_chems <- full_comb_no.id %>% dplyr::select(genetic_distance,Calcium,Magnesium,Barium,Copper,Nickel,Silicon,Strontium,Zinc,Manganese,Potassium,Chromium,Cadmium,Cobalt)
+subset_chems_corr_above0.5 <- full_comb_no.id %>% dplyr::select(genetic_distance,Calcium,Magnesium,Barium,Copper,Nickel,Silicon,Strontium,Zinc,Manganese,Potassium,Chromium,Cadmium,Cobalt,NH4.N,Arsenic,Selenium,Phosphorus,Sulfur,Boron,aluminum)
 
-subset_covar_plot <- pairs.panels(subset_chems, 
+subset_corr_above0.5_covar_plot <- pairs.panels(subset_chems_corr_above0.5, 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             ellipses = TRUE, # show correlation ellipses
+             gap = 0,
+             cex = 2.5 
+             )
+
+# Narrow further to those important in analysis and any that are strongly correlated with them
+subset_chems_sml <- full_comb_no.id %>% dplyr::select(genetic_distance,Calcium,Magnesium,Nickel,Copper,Silicon,Strontium,Potassium,Boron,aluminum)
+
+subset_corr_above0.5_covar_plot <- pairs.panels(subset_chems_sml, 
              method = "pearson", # correlation method
              hist.col = "#00AFBB",
              density = TRUE,  # show density plots
              ellipses = TRUE, # show correlation ellipses
              gap = 0
+            # cex.labels = 1.5 # this makes the labels too big relative to the number labels... and makes genetic_distance not fit... but seems too small otherwise so not sure how best to do it
              )
 
 # cov(full_comb_no.id)
@@ -208,5 +273,7 @@ subset_covar_plot <- pairs.panels(subset_chems,
 # pairs(~salary+education+age, data = df, main = "Scatterplot Matrix")
 
 ```
+
+\
 
 \

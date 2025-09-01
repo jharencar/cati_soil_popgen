@@ -19,16 +19,22 @@ editor_options:
 ```{r}
 ## load packages
 library(dplyr)
-library("ggplot2")
+library(ggplot2)
+library(ggnewscale)
+library(patchwork)
 theme_set(theme_bw())
-library("sf")
+library(sf)
 library("rnaturalearth")
 #library(rnaturalearthhire)
 library(elevatr)
 library(raster)
+library(cowplot)
+library(ggspatial)
+library(viridis)
+
 ```
 
-## Data
+# Data
 
 We collected soil samples from six different patches of *Calochotrus tiburonensis* on Ring Mountain. The number of soil samples collected from each patch depended on the patch size, ranging from 1-6 samples per patch. We sampled the nearest plant to each soil core for genetic analysis. ((In two cases, two side-by-side plants were collected)).
 
@@ -36,17 +42,17 @@ We collected soil samples from six different patches of *Calochotrus tiburonensi
 samps <- read.csv("lat_long_r.csv", header = T)
 # round to 6 decimal places
 samps <- samps %>% mutate(across(c('Lat_dd', 'Long_dd'), round, 6))
-patches <- data.frame(Patch = c("Westward Ridge", "Calamagrostis", "Taylor", "Fern Gulch", "San Quentin", "Petroglyph Rock"), lat = c(37.91461, 37.91573, 37.91200, 37.91083, 37.91308, 37.91100), long = c(-122.4958, -122.4978, -122.4879, -122.4857, -122.4900, -122.4941))
+patches <- data.frame(Patch = c("Granada", "Westward Ridge", "Petroglyph Rock", "San Quentin", "Taylor", "Fern Gulch"), lat = c(37.9162, 37.9141, 37.9115, 37.9127, 37.9124, 37.9112), long = c(-122.4978, -122.4958, -122.4941, -122.4902, -122.4879, -122.4857))
 
 ```
 
-
-## Map
+# Map
+## Ring Mountain Map
 Help for making elevation maps from here: https://rspatialdata.github.io/elevation.html
 ```{r}
 
 # Define bounding box 
-lat_min <- 37.909
+lat_min <- 37.910
 lat_max <- 37.917
 lon_min <- -122.50
 lon_max <- -122.484
@@ -68,19 +74,49 @@ sf_bbox <- st_polygon(list(bbox)) %>%
 elevation_1 <- elevatr::get_elev_raster(locations = sf_bbox, z = 14, clip = "locations")
 
 # convert to df
-elevate <- as.data.frame(elevation_1, xy = TRUE)
+elevate <- raster::as.data.frame(elevation_1, xy = TRUE)
 
 colnames(elevate)[3] <- "elevation_value"
 elevate <- elevate[complete.cases(elevate), ]
 
-a <- ggplot() +
+# jitter specific points that have too much overlap:
+points_to_jitter <- c(1,4,7,10,13,16,19,22)
+samps <- samps %>%
+  mutate(Long_dd_jit = ifelse(ID %in% points_to_jitter,
+                              jitter(Long_dd, amount = 0.0003), Long_dd),
+         Lat_dd_jit = ifelse(ID %in% points_to_jitter,
+                             jitter(Lat_dd, amount = 0.0003), Lat_dd))
+
+# matching colors:
+# ordering patches to match what Joe did:
+samps$Patch <- factor(samps$Patch, levels = c("Ca", "WR", "PR", "SQ", "Ta", "FG"))
+colors <- viridis::viridis(6)
+
+# plot
+RM <- ggplot() +
   geom_raster(data = elevate, aes(x = x, y = y, fill = elevation_value)) +
   geom_sf(data = sf_bbox, color = "white", fill = NA) +
-  # coord_sf(xlim = c(-125.00, -120.3), ylim = c(37.00, 41))+
-  scale_fill_gradient(low = "gray90", high = "gray45", aesthetics = "fill") +
-  labs(title = "", x = "", y = "", fill = "Elevation (meters)") +
-  geom_point(data = samps, aes(x = Long_dd, y = Lat_dd), color=) +
-  geom_text(data=patches, aes(long,lat, label = Patch))
+  coord_sf(expand = FALSE) +
+  scale_fill_gradient(low = "gray90", high = "gray40", name = "Elevation (m)") +
+  labs(title = "", x = "", y = "") +
+  new_scale_fill() +  # <- needed when using two different fill scales
+  geom_point(data = samps, aes(x = Long_dd_jit, y = Lat_dd_jit, fill = Patch),
+             shape = 21, color = "black", stroke = 0.5, size=3, show.legend = FALSE) +
+  scale_fill_manual(values = colors, name = "Patch") +
+  geom_text(data = patches, aes(long, lat, label = Patch)) +
+  ggtitle("Ring Mountain") +
+  annotation_scale(location = "bl", width_hint = 0.5) +
+  theme(
+    legend.position = c(0.088, 0.28),   # place legend inside plot [x, y] (0–1); 0.625, 0.797 works for top right next to map of SF; embedding just elevation legend
+    legend.background = element_rect(
+    color = "black",              
+    linewidth = 0.2               
+  ),
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 8)
+  )
+  
+  # theme(legend.position = "none") # supresses legend for combining with the soil barplots - remove if want only the map
 
   
   # geom_point(data = hatcheries, aes(x = long, y = lat, color=Hatchery), size=3)+
@@ -96,4 +132,147 @@ a <- ggplot() +
   # theme(legend.title = element_text(size = 3), legend.text = element_text(size = 3), legend.key.size = unit(0.5, 'cm'))
 ```
 
+## Bay map
+Basic map of CA to show RM location:
+```{r}
+# map code
+sf_usa <- ne_states(geounit = "United States of America", returnclass = "sf")
+sf_ca <- sf_usa %>% 
+  filter(abbrev == "Calif.")
+
+elevation_ca <- elevatr::get_elev_raster(locations = sf_ca, z = 7, clip = "locations")
+cropped_elev <- crop(elevation_ca, sf_ca)
+elevate_ca <- as.data.frame(cropped_elev, xy = TRUE)
+
+colnames(elevate_ca)[3] <- "elevation_value"
+elevate_ca <- elevate_ca[complete.cases(elevate_ca), ]
+
+SF_bay <- ggplot() +
+  geom_raster(data = elevate_ca, aes(x = x, y = y, fill = elevation_value)) +
+  geom_sf(data = sf_ca, color = "white", fill = NA) +
+  coord_sf(xlim = c(-123.0, -121), ylim = c(37.1, 38.5)) +
+  scale_fill_gradient(low = "gray90", high = "gray45", aesthetics = "fill") +
+  labs(title = "", x = "", y = "", fill = "Elevation (meters)") +
+  geom_point(aes(x = -122.4194, y = 37.7749), color = "black", size = 1) +
+  geom_point(aes(x = -122.49, y = 37.91), pch=8, color = "red", size = 1) +
+  geom_text(aes(x = -121.0, y = 37.6, label = "San Francisco"), 
+            hjust = 1.5, vjust = -0.5, color = "black") +
+  geom_text(aes(x = -121.26, y = 37.911, label = "Ring Mountain"), 
+            hjust = 1.5, vjust = -0.5, color = "black") +
+  theme(legend.position = "none", 
+        plot.margin=unit(c(-1,-1,-1,-1), 'cm'),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+
+```
+
+## combining
+```{r}
+
+full <- ggdraw(RM) +
+  draw_plot(SF_bay, .605, .497, .2, .2)
+
+ggsave("cati_map_250505.pdf", full, width = 25, height = 25, units = "cm", dpi = 300)
+```
+
+# Soil plot
+```{r}
+## soil data
+soils <- read.csv("soils_r.csv", header = T)
+
+## plot
+# set color scheme
+
+soils$population <- factor(soils$population, levels = c("Granada", "WestwardRidge", "PetroglyphRock", "SanQuentin", "Taylor", "FernGulch"))
+colors <- viridis::viridis(6)
+
+#change plot ID to character so it doesn't plot absent plots
+soils$plotID <- as.character(soils$plotID)
+
+# Order plotID by population 
+soils <- soils %>%
+  arrange(population, plotID) %>%
+  mutate(plotID = factor(plotID, levels = unique(plotID)))
+
+# build plots
+# Ca:Mg
+CM <- ggplot(soils, aes(x = seq_along(Ca_Mg_Ratio), y = Ca_Mg_Ratio, fill = population)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = colors, name = "patch") +
+  labs(x = "plots within populations", y = "Ca:Mg Ratio") +
+  theme(axis.text.x = element_blank(),  
+        axis.ticks.x = element_blank()) 
+
+# Nickel
+Ni <- ggplot(soils, aes(x = seq_along(Nickel), y=Nickel, fill=population)) + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values = colors, name = "patch") +
+    labs(x = "plots within populations") +
+  theme(axis.text.x = element_blank(),  
+        axis.ticks.x = element_blank()) 
+
+# Copper
+Co <- ggplot(soils, aes(x = seq_along(Copper), y=Copper, fill=population)) + 
+  geom_bar(stat="identity") +
+  scale_fill_manual(values = colors, name = "patch") +
+    labs(x = "plots within populations") +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())
+
+# combine
+bars <- CM + Ni + Co + plot_layout(guides = "collect")
+```
+
+# Combine soil and map and image
+```{r}
+# load in an image of Cati to add
+library(magick)
+img <- image_read("Cati High Res Rick York CNPS.JPG")
+
+# drawing map with different coords
+full <- ggdraw(RM) +
+  draw_plot(SF_bay, .709, .5745, .28, .28) +
+  draw_image(img, x = 0.4903, y = 0.5412, width = 0.3405, height = 0.3405)
+
+# combine while adjusting sizing
+combined <- ggdraw() +
+  draw_plot(full, x = 0, y = 0.17, width = 1, height = 0.6) +
+  draw_plot(bars, x = 0.025, y = 0, width = 1, height = 0.22)
+
+# Saving final plot
+ggsave("cati_map_w_soil_chem_plots_w_pic.pdf", combined, width = 20, height = 22, units = "cm", dpi = 300)
+
+
+# pickup if needed: the below gets the text to all fit (doesn't cutt off last x axis tick mark, but now the flower and inset map are in the wrong place and need laborious re-adjustment to put them where they belong)
+# Create a new plotting canvas with the desired aspect ratio and margins
+# final_plot_with_margins <- cowplot::ggdraw(xlim = c(0, 1.1), ylim = c(-0.1, 1)) +
+#   cowplot::draw_plot(combined, x = 0, y = 0, width = 1, height = 1)
+# 
+# # Save the final plot using base R
+# pdf("cati_map_w_soil_chem_plots_w_pic_TEST.pdf", width = 8, height = 10)
+# final_plot_with_margins
+# dev.off()
+
+# add the elevation legend back in:
+# # Create a temporary map with only the elevation legend
+# RM_elevation_legend <- ggplot() +
+#   geom_raster(data = elevate, aes(x = x, y = y, fill = elevation_value)) +
+#   scale_fill_gradient(low = "gray90", high = "gray45", name = "Elevation (meters)") +
+#   theme(legend.position = "right")  # display legend
+# 
+# # Extract the legend
+# elevation_legend <- get_legend(RM_elevation_legend)
+# 
+# # make the final plot
+# final_plot <- plot_grid(
+#   combined,
+#   elevation_legend,
+#   nrow = 1,
+#   rel_widths = c(1, 0.1)  # adjust spacing as needed
+# )
+
+
+```
 
