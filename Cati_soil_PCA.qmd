@@ -1,0 +1,114 @@
+---
+title: "Cati soil PCA"
+author: "Julia Harenčár"
+date: "05/26/2025"
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code-overflow: wrap
+    toc: true
+    number-sections: true
+theme:
+  light: minty
+  dark: superhero
+editor_options: 
+  chunk_output_type: console
+---
+
+## Soil PCA
+
+Load packages:
+
+```{r}
+library(randomForest)
+library(tidyverse)
+library(stringr)
+library(vegan)
+library(viridis)
+```
+
+### Read in data and get pairwise distances:
+
+```{r}
+## soil data
+soils <- read.csv("soils_r.csv", header = T)
+
+# remove plant 9 and Ca:Mg ratio
+soils <- soils %>% 
+  filter(plantID != 9) %>% 
+  dplyr::select(-Ca_Mg_Ratio)
+
+# Extract the numeric soil chemical data (columns 7 to end)
+soil_chem <- soils[, 7:ncol(soils)]
+
+# Perform PCA (center and scale the data)
+soil_pca <- prcomp(soil_chem, center = TRUE, scale. = TRUE)
+
+# Check proportion of variance explained
+summary(soil_pca)
+
+# Extract PCA scores
+pca_scores <- as.data.frame(soil_pca$x)
+
+# Add sample IDs for plotting 
+pca_scores$plantID <- soils$plantID
+pca_scores$population <- soils$population
+
+# Get 6 viridis colors
+colors <- viridis(6)
+# Ensure population is a factor so colors map correctly
+pca_scores$population <- as.factor(pca_scores$population)
+
+# plot PCA
+ggplot(pca_scores, aes(x = PC1, y = PC2, color = population, label = plantID)) +
+  geom_point() +
+    geom_point(size = 3, alpha = 0.8) +
+  geom_text(vjust = -0.5, size = 3) +
+  xlab(paste0("PC1 (", round(summary(soil_pca)$importance[2,1] * 100, 1), "% variance)")) +
+  ylab(paste0("PC2 (", round(summary(soil_pca)$importance[2,2] * 100, 1), "% variance)")) +
+  theme_minimal() +
+  scale_color_manual(values = colors)
+
+# Loadings (eigenvectors)
+loadings <- soil_pca$rotation
+
+# View top contributors to PC1
+head(sort(abs(loadings[, "PC1"]), decreasing = TRUE))
+
+#    Cobalt   Cadmium   Calcium      Zinc    Sulfur  Selenium 
+# 0.3014951 0.3014255 0.2947959 0.2867747 0.2853414 0.2847818 
+
+```
+
+### PCA w/ Subset
+```{R}
+#### PCA with subset of top chems ####
+
+# Extract the numeric soil chemical data (columns 7 to end)
+soil_chem <- soils[, 7:ncol(soils)]
+subset_soil_chem <- soil_chem %>% select("Magnesium", "Calcium", "Nickel", "Silicon", "Copper")
+
+
+# Perform PCA (center and scale the data)
+soil_sub_pca <- prcomp(subset_soil_chem, center = TRUE, scale. = TRUE)
+
+# Check proportion of variance explained
+summary(soil_sub_pca)
+
+# Extract PCA scores
+soil_sub_pca_scores <- as.data.frame(soil_sub_pca$x)
+
+# Add sample IDs for plotting 
+soil_sub_pca_scores$plantID <- soils$plantID
+soil_sub_pca_scores$population <- soils$population
+
+ggplot(soil_sub_pca_scores, aes(x = PC1, y = PC2, color = population, label = plantID)) +
+  geom_point(size = 3, alpha = 0.8) +
+  geom_text(vjust = -0.5, size = 3) +
+  xlab(paste0("PC1 (", round(summary(soil_sub_pca)$importance[2,1] * 100, 1), "% variance)")) +
+  ylab(paste0("PC2 (", round(summary(soil_sub_pca)$importance[2,2] * 100, 1), "% variance)")) +
+  theme_minimal() +
+  scale_color_manual(values = colors)
+
+```
