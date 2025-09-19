@@ -1,1 +1,2 @@
-# cati_soil_popgen
+# Code and data for "Extremely fine-scale soil heterogeneity in a rare serpentine endemic plant shapes patterns of genetic diversity"
+This repository contains scripts and input files used in the analysis for the manuscript titled, "Extremely fine-scale soil heterogeneity in a rare serpentine endemic plant shapes patterns of genetic diversity", which is [on biorxiv here] (https://www.biorxiv.org/content/10.1101/2025.09.01.673272v1.full.pdf), and will be submitted to Evolution and Ecology shortly. 
