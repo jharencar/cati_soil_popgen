@@ -1,2 +1,8 @@
 .Rproj.user
 .DS_Store
+./GWAS
+cati_soil_popgen.Rproj
+CATI_NJT.R
+Cati_soil_PCA.R
+Cati_soil_PCA.qmd
+random_forest.qmd
