@@ -22,8 +22,10 @@ Load packages:
 
 ```{r}
 library(randomForest)
-library(dplyr)
+library(tidyverse)
 library(stringr)
+library(vegan)
+
 ```
 
 ### Read in data and get pairwise distances:
@@ -38,7 +40,7 @@ soils <- soils[order(soils$plantID), ]
 # remove plant 9 and Ca:Mg ratio
 soils <- soils %>% 
   filter(plantID != 9) %>% 
-  select(-Ca_Mg_Ratio)
+  dplyr::select(-Ca_Mg_Ratio)
 
 # Modified from Joes Mantel test code:
 # Produce matrix of differnces in the abundance of soil components (Ba, Co, Mg, 
@@ -57,8 +59,7 @@ for (i in 7:ncol(soils)){
   this_compound <- soils[,i]
   
   # Produce distance matrix for the soil component
-  chem_dist <- dist(this_compound)
-  dist_matrix <- as.matrix(chem_dist)
+  dist_matrix <- as.matrix(vegdist(this_compound,method="euclidean",na.rm = TRUE))
   
   # Convert to data frame and reshape to long format
   dist_df <- as.data.frame(as.table(dist_matrix))
@@ -88,18 +89,18 @@ snp_dat <- as.data.frame(CATIgind$tab)
 
 snp_dat <- snp_dat[rownames(snp_dat) != "SSMT009_1", ]
 
-# Genetic distance calculation from Joe's code:
-# Produce matrix of genetic distances for CaTi
-# We use euclidian distances because many alleles are NA for many individuals
-# most estimates of genetic distance are also designed to compare populations and
-# not individuals
-g_eucl_dist <- dist(snp_dat)
+# Genetic distance calculation modified from Joe's code:
 
-# Convert distance object to a matrix
-g_dist_matrix <- as.matrix(g_eucl_dist)
+# calculate euclidian genetic distance. This approach is used to create the
+# square difference matrix and is capable of removing NAs from the calculation
+# of distance
+g_eucl_dist <- as.matrix( vegdist(snp_dat, method="euclidean", diag = TRUE, upper = TRUE, na.rm = TRUE))
+
+## Scale distance values between 0 and 1. Divide all values in matrix by max value
+#g_eucl_dist <- as.matrix(g_eucl_dist/max(g_eucl_dist))
 
 # Convert matrix to data frame and reshape to long format
-g_dist_df <- as.data.frame(as.table(g_dist_matrix))
+g_dist_df <- as.data.frame(as.table(g_eucl_dist))
 
 # Rename columns for clarity
 colnames(g_dist_df) <- c("ID1.old", "ID2.old", "genetic_distance")
@@ -108,7 +109,7 @@ colnames(g_dist_df) <- c("ID1.old", "ID2.old", "genetic_distance")
 g_dist_df <- g_dist_df %>%
   mutate(ID1 = sub("^0+", "", str_extract(ID1.old, "(?<=0)\\d+(?=_)"))) %>% 
   mutate(ID2 = sub("^0+", "", str_extract(ID2.old, "(?<=0)\\d+(?=_)"))) %>% 
-  select(-ID1.old,-ID2.old)
+  dplyr::select(-ID1.old,-ID2.old)
 
 # combine dataframes
 full_comb <- merge(g_dist_df, combined_soil_df)
@@ -122,20 +123,29 @@ full_comb <- full_comb %>%
 Fit random forest model:
 
 ```{r}
-set.seed(3) # make reproducible
+set.seed(1) # make reproducible
 
 # remove ID col for randomForest
 full_comb_no.id <- full_comb %>% 
-  select(-ID1, -ID2)
+  dplyr::select(-ID1, -ID2)
 
 # fit model
 
 # Run random forest analysis
-rf_model <- randomForest(genetic_distance ~ ., data = full_comb_no.id)
+rf_model <- randomForest(genetic_distance ~ ., data = full_comb_no.id, mtry=12)
 print(rf_model)
 
 varImpPlot(rf_model) 
 
+# Tune model - indicates mtry best at 12 as opposed to 8 or 18... no real difference in results. 
+tuneRF(x=full_comb_no.id[,-1], #define predictor variables
+               y=full_comb_no.id$genetic_distance, #define response variable
+               ntreeTry=500,
+               mtryStart=12, 
+               stepFactor=1.5,
+               improve=0.01,
+               trace=FALSE #don't show real-time progress
+               )
 ```
 
 Old probably useless code to combining snp and soil data:
