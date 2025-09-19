@@ -24,6 +24,18 @@ editor_options:
 # Correlation heatmap in ggplot world:
 library(ggcorrplot)
 
+# Import and clean soil data
+# soil data
+soils <- read.csv("soils_r.csv", header = T)
+
+# sort soil data by plant ID to correspond with genetic data
+soils <- soils[order(soils$plantID), ]
+
+# remove plant 9 and Ca:Mg ratio
+soils <- soils %>% 
+  filter(plantID != 9) %>% 
+  dplyr::select(-Ca_Mg_Ratio)
+
 # subset raw soils data to remove genetic data:
 soils_only <- soils[,5:31]
 
