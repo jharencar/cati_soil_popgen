@@ -4,7 +4,7 @@ This repository contains scripts and input files used in the analysis for the ma
 ## Contents:
 ### code:
 `GDM_script.r` - code for the Generalized Dissimilarity Matrix analysis
-'Sample_map.qmd` - code for generating Figure 1, the sample map with example soil chemistry plots
+`Sample_map.qmd` - code for generating Figure 1, the sample map with example soil chemistry plots
 `mantel_tests.R` - code for running the Mantel tests
 `soil_covariance.qmd` - code for generating soil covariances and covariance matrix plots
 
