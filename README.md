@@ -11,4 +11,5 @@ This repository contains scripts and input files used in the analysis for the ma
 ### data:
 `CATIgind.Rdata` - genind file with RADseq data for the analyses saved as a `.Rdata` file
 `lat_long_r.csv` - coordinates of the sample collection locations for generating the sample map
-`soils_complete` - soil chemistry data for all sample collection locations
+`soils_r.csv` - soil chemistry data for all sample collection locations (THIS is the one I use in `soil_covariance.qmd`; check with Joe about `soils_complete.csv`)
+`soils_complete.csv` - soil chemistry data for all sample collection locations
