@@ -25,9 +25,34 @@ library(ggfortify)
 # Plants are listed in genid object in numerical order based on their ID
 load("C:/Users/PlantagoMacine/Documents/GitHub/cati_soil_popgen/CATIgind.Rdata")
 
+# Rename patches
+# New patches 
+# Burn > Petroglyph Rock, Nursery > Westward Ridge
+patches <- c("Fern", "Fern", "Fern", "San Quentin","San Quentin", "San Quentin", 
+             "Petroglyph Rock", "Petroglyph Rock", "Petroglyph Rock", "Petroglyph Rock",
+             "Petroglyph Rock", "Petroglyph Rock", "Granada", "Granada",
+             "Granada", "Westward Ridge", "Westward Ridge", "Westward Ridge", 
+             "Westward Ridge", "Westward Ridge", "Westward Ridge", "Taylor", "Taylor", "Taylor")
+
+patches <- data.frame(patches)
+
+#Set it as the strata and call the patches$patches vector
+strata(CATIgind) <- patches
+setPop(CATIgind) <- ~patches
+
+
+
 # Load soils data. Convert to data frame because I am old
 soils_r <- read.csv("soils_r.csv")
 soils <- as.data.frame(soils_r)
+
+
+# Rename patches in soil data
+soils$population <- replace(soils$population, c(1:4, 22, 23), 'Westward Ridge')
+soils$population <- replace(soils$population, c(5:7), 'Granada')
+soils$population <- replace(soils$population, c(10, 11, 21), 'Fern Gulch')
+soils$population <- replace(soils$population, c(12, 13, 20), 'San Quentin')
+soils$population <- replace(soils$population, c(14:19), 'Petroglyph Rock')
 
 # Sort soil data by plant ID to correspond with genetic data
 soils <- soils[order(soils$plantID), ]
@@ -93,6 +118,14 @@ rownames(cati_allels_imp) <- names2
 
 
 
+# Rename patches in descriptors_mod
+descriptors_mod$Patch <- replace(descriptors_mod$Patch, c(1:3), 'Fern Gulch')
+descriptors_mod$Patch <- replace(descriptors_mod$Patch, c(4:5), 'San Quentin')
+descriptors_mod$Patch <- replace(descriptors_mod$Patch, c(7,8,18:20), 'Petroglyph Rock')
+descriptors_mod$Patch <- replace(descriptors_mod$Patch, c(9:11), 'Granada')
+descriptors_mod$Patch <- replace(descriptors_mod$Patch, c(12:17), 'Westward Ridge')
+descriptors_mod$Patch <- replace(descriptors_mod$Patch, c(21:23), 'Taylor')
+
 
 ### Perform RDA ###
 cati_dbrda <- dbrda(cati_allels_imp ~ Magnesium + Nickel + Calcium,
@@ -128,8 +161,8 @@ dbrda_summary$biplot
 
 #Plot RDA 
 #set up colors for 6 populations with viridis package
-levels(descriptors_mod$population) <- c("FernGulch", "SanQuentin","PetroglyphRock", "Calamagrostis","Taylor", "WestwardRidge")
-pops <- descriptors_mod$population
+levels(descriptors_mod$Patch) <- c("Granada",  'Westward Ridge', "Petroglyph Rock", "San Quentin","Taylor","Fern Gulch")
+pops <- descriptors_mod$Patch
 v_cols <- viridis(6)
   
 
@@ -138,7 +171,7 @@ plot(cati_dbrda, type ="n", scaling = 3)
 text(cati_dbrda, scaling=3, display="bp", col="#0868ac", cex=1)  
 points(cati_dbrda, display="sites", pch=21, cex=1.3,
        col="gray32", scaling=3, bg = v_cols)
-legend("bottomleft", legend=levels(pops), bty="n", col="gray32", pch=21, cex=1, pt.bg=bg)
+legend("bottomleft", legend=levels(pops), bty="n", col="gray32", pch=21, cex=1, pt.bg=v_cols)
 
 
 
@@ -159,6 +192,15 @@ soils_complete <- read.csv("soils_complete.csv")
 # Load soils data. Convert to data frame because I am old
 soils_r <- read.csv("soils_r.csv")
 soils <- as.data.frame(soils_r)
+
+
+# Rename patches in soil data
+soils$population <- replace(soils$population, c(1:4, 22, 23), 'Westward Ridge')
+soils$population <- replace(soils$population, c(5:7), 'Granada')
+soils$population <- replace(soils$population, c(10, 11, 21), 'Fern Gulch')
+soils$population <- replace(soils$population, c(12, 13, 20), 'San Quentin')
+soils$population <- replace(soils$population, c(14:19), 'Petroglyph Rock')
+
 
 # Sort soil data by plant ID to correspond with genetic data
 soils <- soils[order(soils$plantID), ]
@@ -228,8 +270,8 @@ axis_out <- anova.cca(cati_rda_pca, by="axis")
 
 #Plot RDA 
 #set up colors for 6 populations with viridis package
-levels(pca_descriptors$population) <- c("FernGulch","SanQuentin","PetroglyphRock",
-                                        "Calamagrostis","Taylor", "WestwardRidge")
+levels(pca_descriptors$population) <-  c("Granada",  'Westward Ridge', "Petroglyph Rock", "San Quentin","Taylor","Fern Gulch")
+
 pops <- pca_descriptors$population
 v_cols <- viridis(6)
 
@@ -239,7 +281,7 @@ plot(cati_rda_pca, type ="n", scaling = 3)
 text(cati_rda_pca, scaling=3, display="bp", col="#0868ac", cex=1)  
 points(cati_rda_pca, display="sites", pch=21, cex=1.3,
        col="gray32", scaling=3, bg = v_cols)
-legend("bottomright", legend=levels(pops), bty="n", col="gray32", pch=21, cex=1, pt.bg=bg)
+legend("bottomright", legend=levels(pops), bty="n", col="gray32", pch=21, cex=1, pt.bg=v_cols)
 
 
 
