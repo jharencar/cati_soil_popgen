@@ -2,7 +2,7 @@
 
 library(adegenet)
 library(factoextra)
-
+library(viridis)
 
 ## load file
 load("C:/Users/PlantagoMacine/Documents/GitHub/cati_soil_popgen/CATIgind.Rdata")
