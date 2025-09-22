@@ -93,11 +93,11 @@ gdm.1 <- gdm(data=gdmTab.dis, geo=TRUE)
 
 gdm.1.splineDat <- isplineExtract(gdm.1)
 
-plot(gdm.1.splineDat$x[,"NO3_NO2"], 
-     gdm.1.splineDat$y[,"NO3_NO2"], 
+plot(gdm.1.splineDat$x[,"Nickel"], 
+     gdm.1.splineDat$y[,"Nickel"], 
      lwd=3,
      type="l", 
-     xlab="Nitrate Abundance (mg/Kg)", 
+     xlab="Nickel Abundance (mg/Kg)", 
      ylab="Partial genetic turnover")
 
 ## Plot relative contributions of all variables
@@ -194,7 +194,7 @@ out <- cbind.data.frame(max_isoclines$variable ,test )
 ## Remove them from the data set and re-run
 
 descriptors_mod <- descriptors_mod[, -which(names(descriptors_mod) %in% 
-                          c("aluminum", "Arsenic", "Boron", "Calcium",
+                          c("Aluminum", "Arsenic", "Boron", "Calcium",
                             "Cadmium", "Chromium", "Potassium", "Manganese",
                             "Lead", "Sulfur", "Selenium", "Silicon", "NH4-N",
                              "Strontium"))]
