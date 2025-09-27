@@ -4,10 +4,12 @@ This repository contains scripts and input files used in the analysis for the ma
 ## Contents:
 ### code:
 `GDM_script.r` - code for the Generalized Dissimilarity Model analysis \
+`CATI_PCA_Code.r` - code for the performing PCA on C. tiburonensis SNP data with visualization \
+`cati_rda.r` - code for the performing Redundancy Analysis on C. tiburonensis SNP dataset with soil variation, with output visualization \
 `Sample_map.qmd` - code for generating Figure 1, the sample map with example soil chemistry plots \
 `mantel_tests.R` - code for running the Mantel tests \
 `soil_covariance.qmd` - code for generating soil covariances and covariance matrix plots \
-`Soil_NMDS.R` - code for generating soil NMDS plot 
+`Soil_NMDS.R` - code for generating soil NMDS plot \
 
 ### data:
 `CATIgind.Rdata` - genind file with RADseq data for the analyses saved as a `.Rdata` file \
